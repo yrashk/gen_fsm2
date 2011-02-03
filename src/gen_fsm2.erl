@@ -385,7 +385,7 @@ decode_msg(Msg,Parent, Name, StateName, StateData, Mod, Time, Debug, Hib) ->
     end.
 
 %%-----------------------------------------------------------------
-%% Handiling handle_state
+%% Handling handle_state
 %%-----------------------------------------------------------------
 handle_state_handler(Mod, StateName, StateData) ->
     case erlang:function_exported(Mod, handle_state, 2) of
