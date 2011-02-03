@@ -399,7 +399,7 @@ handle_state_handler(Mod, StateName, StateData) ->
                     terminate(Reason, handle_state, undefined, Mod, StateName, NStateData, [])
             end;
         _ ->
-            ignore
+            StateData
     end.
 
 
