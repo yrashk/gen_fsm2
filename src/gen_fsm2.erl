@@ -131,7 +131,7 @@
 -spec behaviour_info(atom()) -> 'undefined' | [{atom(), arity()}].
 
 behaviour_info(callbacks) ->
-    [{init,1},{handle_state, 2},{handle_event,3},{handle_sync_event,4},{handle_info,3},
+    [{init,1},{handle_event,3},{handle_sync_event,4},{handle_info,3},
      {terminate,3},{code_change,4}];
 behaviour_info(_Other) ->
     undefined.
@@ -388,13 +388,18 @@ decode_msg(Msg,Parent, Name, StateName, StateData, Mod, Time, Debug, Hib) ->
 %% Handiling handle_state
 %%-----------------------------------------------------------------
 handle_state_handler(Mod, StateName, StateData) ->
-    case Mod:handle_state(StateName, StateData) of
-        ignore ->
-            StateData;
-        {ok, NStateData} ->
-            NStateData;
-        {stop, Reason, NStateData} ->
-            terminate(Reason, handle_state, undefined, Mod, StateName, NStateData, [])
+    case erlang:function_exported(Mod, handle_state, 2) of
+        true ->
+            case Mod:handle_state(StateName, StateData) of
+                ignore ->
+                    StateData;
+                {ok, NStateData} ->
+                    NStateData;
+                {stop, Reason, NStateData} ->
+                    terminate(Reason, handle_state, undefined, Mod, StateName, NStateData, [])
+            end;
+        _ ->
+            ignore
     end.
 
 
