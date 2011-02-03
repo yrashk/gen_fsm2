@@ -131,7 +131,7 @@
 -spec behaviour_info(atom()) -> 'undefined' | [{atom(), arity()}].
 
 behaviour_info(callbacks) ->
-    [{init,1},{handle_event,3},{handle_sync_event,4},{handle_info,3},
+    [{init,1},{handle_state, 2},{handle_event,3},{handle_sync_event,4},{handle_info,3},
      {terminate,3},{code_change,4}];
 behaviour_info(_Other) ->
     undefined.
@@ -347,17 +347,19 @@ name(Pid) when is_pid(Pid) -> Pid.
 %% The MAIN loop
 %%-----------------------------------------------------------------
 loop(Parent, Name, StateName, StateData, Mod, hibernate, Debug) ->
+    StateData1 = handle_state_handler(Mod, StateName, StateData),
     proc_lib:hibernate(?MODULE,wake_hib,
-		       [Parent, Name, StateName, StateData, Mod, 
+		       [Parent, Name, StateName, StateData1, Mod, 
 			Debug]);
 loop(Parent, Name, StateName, StateData, Mod, Time, Debug) ->
+    StateData1 = handle_state_handler(Mod, StateName, StateData),
     Msg = receive
 	      Input ->
 		    Input
 	  after Time ->
 		  {'$gen_event', timeout}
 	  end,
-    decode_msg(Msg,Parent, Name, StateName, StateData, Mod, Time, Debug, false).
+    decode_msg(Msg,Parent, Name, StateName, StateData1, Mod, Time, Debug, false).
 
 wake_hib(Parent, Name, StateName, StateData, Mod, Debug) ->
     Msg = receive
@@ -381,6 +383,20 @@ decode_msg(Msg,Parent, Name, StateName, StateData, Mod, Time, Debug, Hib) ->
 	    handle_msg(Msg, Parent, Name, StateName, StateData,
 		       Mod, Time, Debug1)
     end.
+
+%%-----------------------------------------------------------------
+%% Handiling handle_state
+%%-----------------------------------------------------------------
+handle_state_handler(Mod, StateName, StateData) ->
+    case Mod:handle_state(StateName, StateData) of
+        ignore ->
+            StateData;
+        {ok, NStateData} ->
+            NStateData;
+        {stop, Reason, NStateData} ->
+            terminate(Reason, handle_state, undefined, Mod, StateName, NStateData, [])
+    end.
+
 
 %%-----------------------------------------------------------------
 %% Callback functions for system messages handling.
